@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pixel Chef: Burger Blitz</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="hud">
+    <div class="left">
+      <div class="title">🍔 Pixel Chef: <span>Burger Blitz</span></div>
+      <div class="stats">
+        <span id="score">Score: 0</span>
+        <span id="lives">Lives: ❤️❤️❤️</span>
+        <span id="level">Level: 1</span>
+      </div>
+    </div>
+    <div class="right">
+      <div class="order-card">
+        <div class="order-title">Order</div>
+        <ol id="orderList"></ol>
+        <div class="timer"><span id="timer">⏱ 00.0s</span></div>
+      </div>
+      <div class="help">
+        <div>Controls: ◀︎ ▶︎ arrows (or A/D)</div>
+        <div>Catch items in the shown order.</div>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="game"></canvas>
+
+  <div id="overlay" class="hidden">
+    <div class="card">
+      <h1>🍔 Pixel Chef</h1>
+      <p>Catch ingredients in the correct order to build the burger! Avoid spoiled items.</p>
+      <button id="startBtn">Start</button>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
