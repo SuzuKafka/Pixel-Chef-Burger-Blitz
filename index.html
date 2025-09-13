@@ -8,23 +8,24 @@
 </head>
 <body>
   <div id="hud">
-    <div class="left">
-      <div class="title">🍔 Pixel Chef: <span>Burger Blitz</span></div>
-      <div class="stats">
-        <span id="score">Score: 0</span>
-        <span id="lives">Lives: ❤️❤️❤️</span>
-        <span id="level">Level: 1</span>
+    <div class="inner">
+      <div class="left">
+        <div class="title">🍔 Pixel Chef: <span>Burger Blitz</span></div>
+        <div class="stats">
+          <span id="score">Score: 0</span>
+          <span id="lives">Lives: ❤️❤️❤️</span>
+          <span id="level">Level: 1</span>
+        </div>
       </div>
-    </div>
-    <div class="right">
-      <div class="order-card">
-        <div class="order-title">Order</div>
-        <ol id="orderList"></ol>
-        <div class="timer"><span id="timer">⏱ 00.0s</span></div>
-      </div>
-      <div class="help">
-        <div>Controls: ◀︎ ▶︎ arrows (or A/D)</div>
-        <div>Catch items in the shown order.</div>
+      <div class="right">
+        <div class="order-card">
+          <div class="order-title">Order</div>
+          <ol id="orderList"></ol>
+        </div>
+        <div class="help">
+          <div>Controls: ◀︎ ▶︎ arrows (or A/D)</div>
+          <div>Catch items in the shown order.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -32,18 +33,18 @@
   <canvas id="game"></canvas>
 
   <div id="overlay">
-<div class="card">
-  <h1>🍔 Pixel Chef: Burger Blitz</h1>
-  <h3>How to Play</h3>
-  <ol style="text-align:left; max-width: 420px; margin: 8px auto;">
-    <li>Move the tray with ◀︎▶︎ (or A/D).</li>
-    <li>Catch ingredients in the order shown in the Order card.</li>
-    <li>Avoid spoiled (striped) items and wrong ingredients.</li>
-    <li>Finish the sequence fast for bonus points.</li>
-    <li>Run out of time or lives and it’s game over.</li>
-  </ol>
-  <button id="startBtn">Start</button>
-</div>
+    <div class="card">
+      <h1>🍔 Pixel Chef: Burger Blitz</h1>
+      <h3>How to Play</h3>
+      <ol style="text-align:left; max-width: 420px; margin: 8px auto;">
+        <li>Move the tray with ◀︎▶︎ (or A/D).</li>
+        <li>Catch ingredients in the order shown in the Order card.</li>
+        <li>Avoid rotten (purple-striped) items — they cost 1 life.</li>
+        <li>Golden Patty grants +1 life.</li>
+        <li>Endless mode: play until lives run out.</li>
+      </ol>
+      <button id="startBtn">Start</button>
+    </div>
   </div>
 
   <script src="main.js"></script>
