@@ -20,7 +20,15 @@ html, body { margin: 0; height: 100%; background: #0b0f14; color: #e8f1ff; font-
 .timer { font-size: 13px; opacity: 0.9; }
 .help { pointer-events: auto; font-size: 12px; opacity: 0.9; padding: 8px 10px; border-radius: 12px; background: rgba(22,29,40,0.5); border: 1px solid rgba(255,255,255,0.05); }
 
-#game { display: block; width: 100vw; height: 100vh; }
+#game {
+  display: block;
+  /* Constrain size on big screens, still fill small screens */
+  width: min(100vw, 900px);
+  height: min(100vh, 700px);
+  margin: 0 auto; /* center horizontally */
+}
+#overlay { z-index: 10; } /* ensure the overlay/buton sits above canvas */
+#hud { z-index: 5; position: fixed; } /* hud stays on top too */
 
 #overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: grid; place-items: center;
@@ -37,6 +45,3 @@ html, body { margin: 0; height: 100%; background: #0b0f14; color: #e8f1ff; font-
 @keyframes flash {
   from { background: rgba(180,0,0,0.3); } to { background: transparent; }
 }
-
-#overlay { z-index: 10; }
-#hud { z-index: 5; position: fixed; } /* hud is already fixed in your CSS */

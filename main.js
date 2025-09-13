@@ -13,20 +13,23 @@
   const startBtn = document.getElementById('startBtn');
 
   // Resize canvas to device pixels
-  function fitCanvas() {
-    const dpr = Math.max(1, window.devicePixelRatio || 1);
-    canvas.width = Math.floor(window.innerWidth * dpr);
-    canvas.height = Math.floor(window.innerHeight * dpr);
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
+function fitCanvas() {
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  // Use the CSS box size to set internal pixel size
+  const rect = canvas.getBoundingClientRect();
+  canvas.width  = Math.floor(rect.width * dpr);
+  canvas.height = Math.floor(rect.height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
   window.addEventListener('resize', fitCanvas);
   fitCanvas();
 
   // Game constants
-  const FLOOR_Y = () => Math.min(window.innerHeight - 120, window.innerHeight * 0.82);
-  const WORLD = { w: () => window.innerWidth, h: () => window.innerHeight };
+const WORLD = {
+  w: () => canvas.getBoundingClientRect().width,
+  h: () => canvas.getBoundingClientRect().height
+};
+const FLOOR_Y = () => Math.min(WORLD.h() - 120, WORLD.h() * 0.82);
   const INGREDIENT_SIZE = { w: 72, h: 24 };
   const TRAY = { w: 160, h: 20, speed: 520 };
   const GRAVITY = 980; // px/s^2
@@ -155,6 +158,7 @@
     orderProgress: 0,
     orderTimeLeft: 0,
     combo: 0,
+    stack: [],
   };
 
   function resetGame() {
@@ -173,6 +177,7 @@
   function nextOrder() {
     state.currentOrder = randomRecipe(state.level);
     state.orderProgress = 0;
+state.stack = [];
     // order time scales with length and level
     state.orderTimeLeft = state.currentOrder.time - Math.min(state.level*1.2, 10);
     formatOrderList(state.currentOrder.seq, state.orderProgress);
@@ -239,6 +244,7 @@
           state.orderProgress++;
           state.combo++;
           state.score += 50 + state.combo * 5;
+            state.stack.push(ing.key);
           formatOrderList(state.currentOrder.seq, state.orderProgress);
           if (state.orderProgress >= state.currentOrder.seq.length) {
             // Order completed!
@@ -319,15 +325,26 @@
     ctx.fillRect(0, gy-2, WORLD.w(), 2);
   }
 
-  function drawTray() {
-    const tx = state.trayPos - TRAY.w/2;
-    const ty = state.trayY();
-    // plate
-    ctx.fillStyle = '#1a2433';
-    ctx.fillRect(tx, ty, TRAY.w, TRAY.h);
-    // bun bottom visual
-    drawIngredient(ctx, tx + 8, ty - 14, TRAY.w - 16, 18, 'Bun', '#d5a253', false);
+function drawTray() {
+  const tx = state.trayPos - TRAY.w/2;
+  const ty = state.trayY();
+
+  // plate
+  ctx.fillStyle = '#1a2433';
+  ctx.fillRect(tx, ty, TRAY.w, TRAY.h);
+
+  // bun bottom
+  drawIngredient(ctx, tx + 8, ty - 14, TRAY.w - 16, 18, 'Bun', '#d5a253', false);
+
+  // draw stacked ingredients (what player has caught correctly)
+  const layerHeight = INGREDIENT_SIZE.h + 2;
+  for (let i = 0; i < state.stack.length; i++) {
+    const key = state.stack[i];
+    const type = TYPE_BY_KEY[key];
+    const y = ty - 14 - (i + 1) * layerHeight; // stack upwards
+    drawIngredient(ctx, tx + 12, y, TRAY.w - 24, INGREDIENT_SIZE.h, type.label, type.color, false);
   }
+}
 
   function gameOver() {
     state.running = false;
