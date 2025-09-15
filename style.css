@@ -51,3 +51,14 @@ html, body { margin: 0; height: 100%; background: #0b0f14; color: #e8f1ff; font-
 .pill-golden { background: #ffc107; color: #0b0f14; box-shadow: 0 0 0 2px rgba(255,193,7,0.2); }
 .pill-rotten { background: #bb33ff; color: #ffffff; box-shadow: 0 0 0 2px rgba(187,51,255,0.18); }
 .pill-heart  { background: #e53935; color: #ffffff; }
+
+/* HUD button */
+.hud-btn { padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(22,29,40,0.55); color: #e8f1ff; font-weight: 700; cursor: pointer; }
+.hud-btn:hover { background: rgba(22,29,40,0.7); }
+.hud-btn:focus { outline: none; }
+
+.audio-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.vol-label { display: flex; align-items: center; gap: 6px; font-size: 12px; opacity: 0.95; }
+.vol-label input[type="range"] { width: 110px; height: 4px; appearance: none; background: rgba(255,255,255,0.15); border-radius: 4px; outline: none; }
+.vol-label input[type="range"]::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #ffe082; box-shadow: 0 0 0 2px rgba(0,0,0,0.25); cursor: pointer; }
+.vol-label input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #ffe082; border: none; cursor: pointer; }

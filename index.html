@@ -24,8 +24,15 @@
         </div>
         <div class="help">
           <div>Controls: ◀︎ ▶︎ arrows (or A/D)</div>
-          <div>Enter: Start/Restart • P: Pause/Resume</div>
+          <div>Enter: Start/Restart • P: Pause/Resume • M: Mute</div>
           <div>Catch items in the shown order.</div>
+          <div class="audio-row">
+            <button id="muteBtn" class="hud-btn">🔊 Sound: On</button>
+            <label class="vol-label">Vol
+              <input id="volumeSlider" type="range" min="0" max="100" step="1" value="60" />
+              <span id="volumeValue">60%</span>
+            </label>
+          </div>
         </div>
       </div>
     </div>
@@ -49,6 +56,7 @@
     </div>
   </div>
 
+  <script src="audio.js"></script>
   <script src="main.js"></script>
 </body>
 </html>

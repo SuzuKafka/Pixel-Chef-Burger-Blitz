@@ -11,6 +11,10 @@
   const orderNameEl = document.getElementById('orderName');
   const overlay = document.getElementById('overlay');
   const startBtn = document.getElementById('startBtn');
+  const muteBtn = document.getElementById('muteBtn');
+  const volumeSlider = document.getElementById('volumeSlider');
+  const volumeValue = document.getElementById('volumeValue');
+  const audio = window.audioEngine;
 
   // Resize canvas to CSS pixels * DPR
   function fitCanvas() {
@@ -170,9 +174,19 @@
       if (state.running) {
         state.paused = !state.paused;
         if (state.paused) { input.left = false; input.right = false; }
+        audio.ensure();
+        if (!audio.muted && audio.ctx) audio.tone(state.paused ? 520 : 760, 120, 'sine', 0.15);
         e.preventDefault();
         return;
       }
+    }
+    // M key to toggle mute
+    if (e.key === 'm' || e.key === 'M') {
+      audio.ensure();
+      audio.setMuted(!audio.muted);
+      if (muteBtn) muteBtn.textContent = audio.muted ? '🔇 Sound: Off' : '🔊 Sound: On';
+      e.preventDefault();
+      return;
     }
     const k = keymap[e.key]; if (k) { input[k] = true; e.preventDefault(); }
   }, { passive: false });
@@ -243,6 +257,16 @@
     document.body.classList.remove('bad-flash');
     overlay.classList.add('hidden');
     updateHUD();
+    // init audio context on user gesture; subtle start ping
+    audio.ensure();
+    if (muteBtn) muteBtn.textContent = audio.muted ? '🔇 Sound: Off' : '🔊 Sound: On';
+    if (volumeSlider) {
+      // sync slider to current gain
+      const percent = Math.round((audio.gain / audio.maxGain) * 100);
+      volumeSlider.value = String(percent);
+      if (volumeValue) volumeValue.textContent = `${percent}%`;
+    }
+    if (!audio.muted && audio.ctx) audio.tone(740, 140, 'triangle', 0.15);
   }
 
   function nextOrder() {
@@ -321,6 +345,8 @@
           if (state.lives <= 0) { gameOver(); return; }
           updateHUD();
           flashBad();
+          audio.ensure();
+          if (!audio.muted && audio.ctx) audio.sweep(420, 160, 300, 'square', 0.20);
           continue;
         }
 
@@ -330,6 +356,8 @@
           state.lives = Math.min(MAX_LIVES, state.lives + 1);
           state.score += 100;
           updateHUD();
+          audio.ensure();
+          if (!audio.muted && audio.ctx) audio.arp([880, 1320, 1760], 110, 'sine', 0.22);
           continue;
         } else if (ing.key === want) {
           state.orderProgress++;
@@ -338,11 +366,25 @@
           state.stack.push(ing.key);
           formatOrderList(state.currentOrder.seq, state.orderProgress);
     if (orderNameEl) orderNameEl.textContent = state.currentOrder.name || '';
+          // correct catch plink scaled by combo
+          audio.ensure();
+          if (!audio.muted && audio.ctx) {
+            const f = 560 + Math.min(6, state.combo) * 60;
+            audio.tone(f, 120, 'square', 0.16);
+          }
           if (state.orderProgress >= state.currentOrder.seq.length) {
             // Order complete! Start blink animation, then advance order
             const comboBonus = Math.min(200, state.combo * 10);
             state.score += 150 + comboBonus;
+            const prevLevel = state.level;
             if (state.score > state.level * 600) state.level++;
+            audio.ensure();
+            if (!audio.muted && audio.ctx) {
+              // completion jingle
+              audio.arp([523, 659, 784], 160, 'triangle', 0.22);
+              // level-up fanfare if applied
+              if (state.level > prevLevel) audio.arp([523, 784, 1046], 200, 'sine', 0.24);
+            }
             state.pendingNextOrder = true;
             state.completeBlinkTime = 0.9; // seconds
             state.completeBlinkToggle = 0;
@@ -353,6 +395,11 @@
           state.score = Math.max(0, state.score - 15);
           state.combo = 0;
           flashBad();
+          audio.ensure();
+          if (!audio.muted && audio.ctx) {
+            audio.sweep(260, 200, 110, 'saw', 0.20);
+            setTimeout(() => { audio.sweep(260, 200, 110, 'saw', 0.20); }, 120);
+          }
         }
       }
     }
@@ -451,6 +498,8 @@
   }
 
   function gameOver() {
+    audio.ensure();
+    if (!audio.muted && audio.ctx) audio.sweep(440, 110, 650, 'sine', 0.22);
     state.running = false;
     overlay.classList.remove('hidden');
     overlay.querySelector('h1').textContent = 'Game Over';
@@ -482,6 +531,32 @@
   requestAnimationFrame(loop);
 
   startBtn.addEventListener('click', resetGame);
+  if (muteBtn) {
+    muteBtn.addEventListener('click', () => {
+      audio.ensure();
+      audio.setMuted(!audio.muted);
+      muteBtn.textContent = audio.muted ? '🔇 Sound: Off' : '🔊 Sound: On';
+    });
+  }
+  if (volumeSlider) {
+    // initialize slider label to current percentage
+    const setVolLabel = () => {
+      const percent = Math.round((audio.gain / audio.maxGain) * 100);
+      volumeValue.textContent = `${percent}%`;
+    };
+    setVolLabel();
+    volumeSlider.addEventListener('input', () => {
+      audio.ensure();
+      const v = Number(volumeSlider.value) / 100; // 0..1
+      audio.setVolume(v);
+      // if muted, unmute on user volume change
+      if (audio.muted) {
+        audio.setMuted(false);
+        if (muteBtn) muteBtn.textContent = '🔊 Sound: On';
+      }
+      setVolLabel();
+    });
+  }
 
   // Initialize HUD and initial order preview
   updateHUD();
