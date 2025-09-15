@@ -8,6 +8,7 @@
   const livesEl = document.getElementById('lives');
   const levelEl = document.getElementById('level');
   const orderListEl = document.getElementById('orderList');
+  const orderNameEl = document.getElementById('orderName');
   const overlay = document.getElementById('overlay');
   const startBtn = document.getElementById('startBtn');
 
@@ -27,65 +28,85 @@
   const FLOOR_Y = () => Math.min(WORLD.h() - 120, WORLD.h() * 0.82);
 
   // Constants
-  const INGREDIENT_SIZE = { w: 72, h: 24 };
+  const INGREDIENT_SIZE = { w: 128, h: 24 };
   const TRAY = { w: 160, h: 20, speed: 520 };
   const GRAVITY = 980;
   const MAX_LIVES = 3;
 
   // Ingredient catalog
   const TYPES = [
-    { key: 'patty',   label: 'Patty',   color: '#6b3d2c' },
-    { key: 'cheese',  label: 'Cheese',  color: '#f4d03f' },
+    { key: 'patty', label: 'Patty', color: '#6b3d2c' },
+    { key: 'cheese', label: 'Cheese', color: '#f4d03f' },
     { key: 'lettuce', label: 'Lettuce', color: '#2ecc71' },
-    { key: 'tomato',  label: 'Tomato',  color: '#e74c3c' },
+    { key: 'tomato', label: 'Tomato', color: '#e74c3c' },
     { key: 'pickles', label: 'Pickles', color: '#27ae60' },
     { key: 'ketchup', label: 'Ketchup', color: '#c0392b' },
     { key: 'mustard', label: 'Mustard', color: '#f1c40f' },
-    { key: 'onion',   label: 'Onion',   color: '#ecf0f1' },
-    { key: 'topbun',  label: 'Top Bun', color: '#d5a253' },
-    { key: 'golden',  label: 'Golden Patty', color: '#f7d04b' },
+    { key: 'onion', label: 'Onion', color: '#ecf0f1' },
+    { key: 'topbun', label: 'Top Bun', color: '#d5a253' },
+    { key: 'golden', label: 'Golden Patty', color: '#f7d04b' },
   ];
   const TYPE_BY_KEY = Object.fromEntries(TYPES.map(t => [t.key, t]));
+  const ING_COLORS = {
+    patty: { body: '#6b3d2c', text: '#0b0f14' },
+    cheese: { body: '#f4d03f', text: '#0b0f14' },
+    lettuce: { body: '#2ecc71', text: '#0b0f14' },
+    pickles: { body: '#1f8f55', text: '#ffffff' },
+    tomato: { body: '#ff6b6b', text: '#0b0f14' }, // light red, dark text
+    ketchup: { body: '#a32020', text: '#ffffff' }, // dark red, white text
+    mustard: { body: '#c9a800', text: '#ffffff' }, // darker yellow vs cheese
+    onion: { body: '#f0f3f7', text: '#0b0f14' },
+    topbun: { body: '#d5a253', text: '#0b0f14' },
+    golden: { body: '#f7d04b', text: '#0b0f14' }
+  };
 
-  function drawIngredient(g, x, y, w, h, label, color, rotten=false) {
+
+  function drawIngredient(g, x, y, w, h, label, key, rotten = false) {
     const r = 8;
-    g.fillStyle = color;
+    // Solid body color (or solid purple if rotten)
+    let bodyColor = rotten ? '#7d3c98' : (ING_COLORS[key]?.body || '#cccccc');
+    let textColor = rotten ? '#ffffff' : (ING_COLORS[key]?.text || '#0b0f14');
+    g.fillStyle = bodyColor;
     g.beginPath();
-    g.moveTo(x-r, y-h/2);
-    g.arcTo(x+w+r, y-h/2, x+w+r, y+h/2, r);
-    g.arcTo(x+w+r, y+h/2, x-r, y+h/2, r);
-    g.arcTo(x-r, y+h/2, x-r, y-h/2, r);
-    g.arcTo(x-r, y-h/2, x+w+r, y-h/2, r);
+    g.moveTo(x - r, y - h / 2);
+    g.arcTo(x + w + r, y - h / 2, x + w + r, y + h / 2, r);
+    g.arcTo(x + w + r, y + h / 2, x - r, y + h / 2, r);
+    g.arcTo(x - r, y + h / 2, x - r, y - h / 2, r);
+    g.arcTo(x - r, y - h / 2, x + w + r, y - h / 2, r);
     g.closePath();
     g.fill();
+
+    // Label (centered), using per-ingredient text color
     if (rotten) {
-      // purple stripes
-      g.save();
-      g.globalAlpha = 0.6;
-      g.fillStyle = '#7d3c98';
-      const stripes = 4;
-      for (let i=0;i<stripes;i++) {
-        g.fillRect(x-10 + i*(w/stripes), y-h/2, w/stripes/2, h);
-      }
-      g.restore();
+      g.fillStyle = '#ffffff';
+      g.font = 'bold 12px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('Rotten', x + w / 2 - 4, y);
+    } else {
+      g.fillStyle = textColor;
+      g.font = 'bold 13px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText(label, x + w / 2 - 4, y);
     }
-    g.fillStyle = '#0b0f14';
-    g.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    g.fillText(label, x + w/2 - 4, y);
   }
 
   // Recipes (endless, no per-order timer)
   const RECIPES = [
+
     { name: 'Cheeseburger', seq: ['patty', 'cheese', 'topbun'] },
     { name: 'Classic', seq: ['patty', 'cheese', 'lettuce', 'tomato', 'ketchup', 'topbun'] },
     { name: 'Double', seq: ['patty', 'cheese', 'patty', 'cheese', 'topbun'] },
+    { name: 'Double Cheese Burger', seq: ['patty', 'cheese', 'cheese', 'topbun'] },
     { name: 'Garden Bite', seq: ['patty', 'lettuce', 'tomato', 'onion', 'mustard', 'topbun'] },
     { name: 'Pickle Pop', seq: ['patty', 'cheese', 'pickles', 'pickles', 'topbun'] },
+    { name: 'Spicy K', seq: ['patty', 'onion', 'ketchup', 'ketchup', 'topbun'] },
+    { name: 'Mustard Melt', seq: ['patty', 'cheese', 'mustard', 'topbun'] },
+    { name: 'Veg-Heavy', seq: ['patty', 'lettuce', 'pickles', 'tomato', 'onion', 'topbun'] }
   ];
   function randomRecipe(level) {
-    const pool = level < 3 ? RECIPES.slice(0,3) : RECIPES;
+    const pool = level < 3 ? RECIPES.slice(0, 3) : RECIPES;
     return pool[Math.floor(Math.random() * pool.length)];
   }
 
@@ -106,7 +127,7 @@
 
   // Input
   const input = { left: false, right: false };
-  const keymap = { 'ArrowLeft': 'left', 'ArrowRight': 'right', 'a':'left', 'd':'right', 'A':'left', 'D':'right' };
+  const keymap = { 'ArrowLeft': 'left', 'ArrowRight': 'right', 'a': 'left', 'd': 'right', 'A': 'left', 'D': 'right' };
   window.addEventListener('keydown', (e) => {
     const k = keymap[e.key]; if (k) { input[k] = true; e.preventDefault(); }
   }, { passive: false });
@@ -116,7 +137,7 @@
 
   // Entities
   class Ingredient {
-    constructor(typeKey, x, speedY, rotten=false) {
+    constructor(typeKey, x, speedY, rotten = false) {
       this.type = TYPE_BY_KEY[typeKey];
       this.key = typeKey;
       this.x = x;
@@ -130,10 +151,8 @@
       this.vy += GRAVITY * dt * 0.25;
       this.y += this.vy * dt;
     }
-    draw(g) {
-      drawIngredient(g, this.x - this.w/2, this.y, this.w, this.h, this.type.label, this.type.color, this.rotten);
-    }
-    offscreen() { return this.y - this.h/2 > WORLD.h() + 40; }
+    draw(g) { drawIngredient(g, this.x - this.w / 2, this.y, this.w, this.h, this.type.label, this.key, this.rotten); }
+    offscreen() { return this.y - this.h / 2 > WORLD.h() + 40; }
   }
 
   // Game state
@@ -142,7 +161,7 @@
     score: 0,
     lives: MAX_LIVES,
     level: 1,
-    trayPos: Math.floor(WORLD.w()/2),
+    trayPos: Math.floor(WORLD.w() / 2),
     ingredients: [],
     spawnTimer: 0,
     spawnEvery: 0.9,
@@ -162,7 +181,7 @@
     state.score = 0;
     state.lives = MAX_LIVES;
     state.level = 1;
-    state.trayPos = Math.floor(WORLD.w()/2);
+    state.trayPos = Math.floor(WORLD.w() / 2);
     state.ingredients = [];
     state.spawnEvery = 0.9;
     state.combo = 0;
@@ -178,6 +197,7 @@
     state.orderProgress = 0;
     state.stack = [];
     formatOrderList(state.currentOrder.seq, state.orderProgress);
+    if (orderNameEl) orderNameEl.textContent = state.currentOrder.name || '';
   }
 
   function updateHUD() {
@@ -189,7 +209,7 @@
   function spawnIngredient(dt) {
     state.spawnTimer -= dt;
     if (state.spawnTimer <= 0) {
-      state.spawnTimer = Math.max(0.35, state.spawnEvery - state.level*0.02);
+      state.spawnTimer = Math.max(0.35, state.spawnEvery - state.level * 0.02);
 
       const keys = TYPES.map(t => t.key);
       const want = expectedKey();
@@ -197,40 +217,40 @@
 
       // Weighted pool (bias expected): 45% expected, 40% random good, 12% rotten, 3% golden
       const pool = [];
-      if (want) for (let i=0;i<45;i++) pool.push(want);
-      for (let i=0;i<40;i++) pool.push(good[Math.floor(Math.random()*good.length)]);
-      for (let i=0;i<12;i++) pool.push('ROTTEN');
-      for (let i=0;i<3;i++) pool.push('golden');
+      if (want) for (let i = 0; i < 45; i++) pool.push(want);
+      for (let i = 0; i < 40; i++) pool.push(good[Math.floor(Math.random() * good.length)]);
+      for (let i = 0; i < 12; i++) pool.push('ROTTEN');
+      for (let i = 0; i < 3; i++) pool.push('golden');
 
       let key = pool[Math.floor(Math.random() * pool.length)];
       let rotten = false;
       if (key === 'ROTTEN') {
         rotten = true;
-        key = good[Math.floor(Math.random()*good.length)];
+        key = good[Math.floor(Math.random() * good.length)];
       }
       // Avoid spawning topbun too early unless it's expected
-      if (key === 'topbun' && key !== want && state.orderProgress < Math.max(1, state.currentOrder.seq.length-2) && Math.random() < 0.9) {
+      if (key === 'topbun' && key !== want && state.orderProgress < Math.max(1, state.currentOrder.seq.length - 2) && Math.random() < 0.9) {
         key = 'cheese';
       }
 
       const x = 40 + Math.random() * (WORLD.w() - 80);
-      const vy = 120 + Math.random() * (140 + state.level*18);
+      const vy = 120 + Math.random() * (140 + state.level * 18);
       state.ingredients.push(new Ingredient(key, x, vy, rotten));
     }
   }
 
   function collideAndCollect() {
-    const tx = state.trayPos - TRAY.w/2;
+    const tx = state.trayPos - TRAY.w / 2;
     const ty = FLOOR_Y();
     const tw = TRAY.w;
     const th = TRAY.h;
 
-    for (let i = state.ingredients.length-1; i >= 0; i--) {
+    for (let i = state.ingredients.length - 1; i >= 0; i--) {
       const ing = state.ingredients[i];
       const withinX = ing.x > tx && ing.x < (tx + tw);
-      const withinY = ing.y + ing.h/2 >= ty && ing.y - ing.h/2 <= ty + th;
+      const withinY = ing.y + ing.h / 2 >= ty && ing.y - ing.h / 2 <= ty + th;
       if (withinX && withinY) {
-        state.ingredients.splice(i,1);
+        state.ingredients.splice(i, 1);
 
         if (ing.rotten) {
           // Rotten: purple, -1 life, score penalty
@@ -256,6 +276,7 @@
           state.score += 50 + state.combo * 5;
           state.stack.push(ing.key);
           formatOrderList(state.currentOrder.seq, state.orderProgress);
+          if (orderNameEl) orderNameEl.textContent = state.currentOrder.name || '';
           if (state.orderProgress >= state.currentOrder.seq.length) {
             // Order complete!
             const comboBonus = Math.min(200, state.combo * 10);
@@ -281,8 +302,8 @@
 
   function update(dt) {
     // Move tray
-    if (input.left)  state.trayPos = Math.max(TRAY.w/2, state.trayPos - TRAY.speed * dt);
-    if (input.right) state.trayPos = Math.min(WORLD.w() - TRAY.w/2, state.trayPos + TRAY.speed * dt);
+    if (input.left) state.trayPos = Math.max(TRAY.w / 2, state.trayPos - TRAY.speed * dt);
+    if (input.right) state.trayPos = Math.min(WORLD.w() - TRAY.w / 2, state.trayPos + TRAY.speed * dt);
 
     spawnIngredient(dt);
     state.ingredients.forEach(ing => ing.update(dt));
@@ -293,10 +314,10 @@
   }
 
   function draw() {
-    ctx.clearRect(0,0, WORLD.w(), WORLD.h());
+    ctx.clearRect(0, 0, WORLD.w(), WORLD.h());
     const gy = FLOOR_Y();
     ctx.fillStyle = '#0e1520';
-    ctx.fillRect(0, gy+TRAY.h, WORLD.w(), WORLD.h()-gy);
+    ctx.fillRect(0, gy + TRAY.h, WORLD.w(), WORLD.h() - gy);
     ctx.fillStyle = '#121b28';
     ctx.fillRect(0, 0, WORLD.w(), gy);
 
@@ -304,17 +325,17 @@
     state.ingredients.forEach(ing => ing.draw(ctx));
 
     ctx.fillStyle = 'rgba(255,255,255,0.08)';
-    ctx.fillRect(0, gy-2, WORLD.w(), 2);
+    ctx.fillRect(0, gy - 2, WORLD.w(), 2);
   }
 
   function drawTray() {
-    const tx = state.trayPos - TRAY.w/2;
+    const tx = state.trayPos - TRAY.w / 2;
     const ty = FLOOR_Y();
     // plate
     ctx.fillStyle = '#1a2433';
     ctx.fillRect(tx, ty, TRAY.w, TRAY.h);
     // bun bottom
-    drawIngredient(ctx, tx + 8, ty - 14, TRAY.w - 16, 18, 'Bun', '#d5a253', false);
+    drawIngredient(ctx, tx + 8, ty - 14, TRAY.w - 16, 18, 'Bun', 'topbun', false);
 
     // stacked layers
     const layerHeight = INGREDIENT_SIZE.h + 2;
@@ -322,7 +343,7 @@
       const key = state.stack[i];
       const type = TYPE_BY_KEY[key];
       const y = ty - 14 - (i + 1) * layerHeight;
-      drawIngredient(ctx, tx + 12, y, TRAY.w - 24, INGREDIENT_SIZE.h, type.label, type.color, false);
+      drawIngredient(ctx, tx + 12, y, TRAY.w - 24, INGREDIENT_SIZE.h, type.label, key, false);
     }
   }
 
@@ -361,5 +382,5 @@
 
   // Initialize HUD and initial order preview
   updateHUD();
-  formatOrderList(['patty','cheese','topbun'], 0);
+  formatOrderList(['patty', 'cheese', 'topbun'], 0);
 })();

@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pixel Chef: Burger Blitz</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
   <div id="hud">
     <div class="inner">
@@ -19,7 +21,8 @@
       </div>
       <div class="right">
         <div class="order-card">
-          <div class="order-title">Order</div>
+          <div class="order-title">Order <span id="orderName"
+              style="opacity:.9;font-weight:600;margin-left:8px;"></span></div>
           <ol id="orderList"></ol>
         </div>
         <div class="help">
@@ -49,4 +52,5 @@
 
   <script src="main.js"></script>
 </body>
+
 </html>
