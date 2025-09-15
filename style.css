@@ -1,5 +1,5 @@
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: #0b0f14; color: #e8f1ff; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+html, body { margin: 0; height: 100%; background: #0b0f14; color: #e8f1ff; font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 
 #hud {
   position: fixed; top: 0; left: 0; width: 100%;
@@ -9,18 +9,18 @@ html, body { margin: 0; height: 100%; background: #0b0f14; color: #e8f1ff; font-
   pointer-events: none;
   z-index: 5;
 }
-#hud .inner { width: min(100vw, 900px); display: flex; justify-content: space-between; }
-#hud .left { display: flex; flex-direction: column; gap: 6px; }
-.title { font-weight: 700; letter-spacing: 0.5px; }
-.title span { opacity: 0.85; }
-.stats { display: flex; gap: 16px; font-size: 14px; opacity: 0.95; }
-.right { display: flex; gap: 12px; align-items: start; }
+#hud .inner { width: min(100vw, 900px); display: flex; justify-content: space-between; align-items: flex-start; }
+#hud .left { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); background: linear-gradient(180deg, rgba(22,29,40,0.65), rgba(18,24,34,0.55)); box-shadow: 0 12px 34px rgba(0,0,0,0.28); width: min(50vw, 420px); align-self: flex-start; }
+.title { font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto; font-weight: 800; letter-spacing: 0.3px; font-size: 18px; }
+.title span { opacity: 0.9; }
+.stats { display: flex; gap: 12px; row-gap: 4px; flex-wrap: wrap; font-size: 14px; opacity: 0.96; font-weight: 600; }
+.right { display: flex; flex-direction: column; gap: 12px; align-items: flex-end; }
 .order-card {
   pointer-events: auto;
-  background: rgba(22,29,40,0.75); padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(22,29,40,0.75); padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.09);
   box-shadow: 0 10px 30px rgba(0,0,0,0.25);
 }
-.order-title { font-weight: 700; margin-bottom: 6px; }
+.order-title { font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.3px; }
 #orderList { margin: 0 0 8px 18px; padding: 0; max-width: 220px; }
 .help { pointer-events: auto; font-size: 12px; opacity: 0.9; padding: 8px 10px; border-radius: 12px; background: rgba(22,29,40,0.5); border: 1px solid rgba(255,255,255,0.05); }
 
@@ -53,7 +53,7 @@ html, body { margin: 0; height: 100%; background: #0b0f14; color: #e8f1ff; font-
 .pill-heart  { background: #e53935; color: #ffffff; }
 
 /* HUD button */
-.hud-btn { padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(22,29,40,0.55); color: #e8f1ff; font-weight: 700; cursor: pointer; }
+.hud-btn { padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(22,29,40,0.55); color: #e8f1ff; font-weight: 700; cursor: pointer; font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto; }
 .hud-btn:hover { background: rgba(22,29,40,0.7); }
 .hud-btn:focus { outline: none; }
 .stats #streak { font-weight: 700; }
@@ -63,3 +63,4 @@ html, body { margin: 0; height: 100%; background: #0b0f14; color: #e8f1ff; font-
 .vol-label input[type="range"] { width: 110px; height: 4px; appearance: none; background: rgba(255,255,255,0.15); border-radius: 4px; outline: none; }
 .vol-label input[type="range"]::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #ffe082; box-shadow: 0 0 0 2px rgba(0,0,0,0.25); cursor: pointer; }
 .vol-label input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #ffe082; border: none; cursor: pointer; }
+.options-row { margin-top: 6px; font-size: 12px; }

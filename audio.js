@@ -21,10 +21,12 @@
     setMuted(m) {
       this.muted = m;
       if (this.master) this.master.gain.value = m ? 0 : this.gain;
+      try { localStorage.setItem('pcbb_audio_muted', m ? '1' : '0'); } catch {}
     },
     setVolume(v) { // v: 0..1
       this.gain = Math.max(0, Math.min(1, v)) * this.maxGain;
       if (!this.muted && this.master) this.master.gain.value = this.gain;
+      try { localStorage.setItem('pcbb_audio_volume', String(Math.max(0, Math.min(1, v)))); } catch {}
     },
     tone(freq, durMs, type='triangle', g) {
       if (!this.ctx) return;
@@ -76,6 +78,14 @@
   const resumeIfNeeded = () => { engine.ensure(); window.removeEventListener('pointerdown', resumeIfNeeded); window.removeEventListener('keydown', resumeIfNeeded); };
   window.addEventListener('pointerdown', resumeIfNeeded, { once: true });
   window.addEventListener('keydown', resumeIfNeeded, { once: true });
+
+  // Load persisted settings
+  try {
+    const m = localStorage.getItem('pcbb_audio_muted');
+    if (m === '1') engine.muted = true;
+    const v = parseFloat(localStorage.getItem('pcbb_audio_volume'));
+    if (!isNaN(v)) engine.gain = Math.max(0, Math.min(1, v)) * engine.maxGain;
+  } catch {}
 
   window.audioEngine = engine;
 })();

@@ -17,6 +17,10 @@
   const volumeSlider = document.getElementById('volumeSlider');
   const volumeValue = document.getElementById('volumeValue');
   const audio = window.audioEngine;
+  // Settings defaults (persisted)
+  let defaultMatchHighlight = true;
+  try { const mh = localStorage.getItem('pcbb_match_highlight'); if (mh === '0') defaultMatchHighlight = false; } catch {}
+  const hudToggleMatchHighlight = document.getElementById('hudToggleMatchHighlight');
 
   // Resize canvas to CSS pixels * DPR
   function fitCanvas() {
@@ -222,7 +226,7 @@
       }
     }
     draw(g) {
-      const highlight = (!this.rotten && this.key === expectedKey());
+      const highlight = (!this.rotten && state.settings && state.settings.matchHighlight && this.key === expectedKey());
       if (this.rotten && this.angle !== 0) {
         g.save(); g.translate(this.x, this.y); g.rotate(this.angle);
         drawIngredient(g, -this.w/2, 0, this.w, this.h, this.type.label, this.key, this.rotten);
@@ -273,6 +277,7 @@
     timeScale: 1, slowmoTime: 0,
     // Stats
     stats: { orders: 0, correct: 0, wrong: 0, rotten: 0, golden: 0, longestStreak: 0 },
+    settings: { matchHighlight: defaultMatchHighlight },
   };
 
   function expectedKey() {
@@ -309,6 +314,7 @@
       volumeSlider.value = String(percent);
       if (volumeValue) volumeValue.textContent = `${percent}%`;
     }
+    if (hudToggleMatchHighlight) hudToggleMatchHighlight.checked = !!(state.settings && state.settings.matchHighlight);
     if (!audio.muted && audio.ctx) audio.tone(740, 140, 'triangle', 0.15);
   }
 
@@ -689,9 +695,17 @@
       setVolLabel();
     });
   }
+  if (hudToggleMatchHighlight) {
+    hudToggleMatchHighlight.addEventListener('change', () => {
+      state.settings = state.settings || {};
+      state.settings.matchHighlight = !!hudToggleMatchHighlight.checked;
+      try { localStorage.setItem('pcbb_match_highlight', state.settings.matchHighlight ? '1' : '0'); } catch {}
+    });
+  }
 
   // Initialize HUD and initial order preview
   try { const b = parseInt(localStorage.getItem('pcbb_high_score')||'0',10); if (!isNaN(b)) state.best = b; } catch {}
   updateHUD();
   formatOrderList(['patty','cheese','topbun'], 0);
+  if (hudToggleMatchHighlight) hudToggleMatchHighlight.checked = !!(state.settings && state.settings.matchHighlight);
 })();

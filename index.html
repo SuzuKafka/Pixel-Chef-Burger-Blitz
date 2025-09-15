@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pixel Chef: Burger Blitz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -20,13 +23,10 @@
         </div>
       </div>
       <div class="right">
-        <div class="order-card">
-          <div class="order-title">Order <span id="orderName" style="opacity:.9;font-weight:600;margin-left:8px;"></span></div>
-          <ol id="orderList"></ol>
-        </div>
         <div class="help">
           <div>Controls: ◀︎ ▶︎ arrows (or A/D)</div>
-          <div>Enter: Start/Restart • P: Pause/Resume • M: Mute</div>
+          <div>• P: Pause/Resume</div>
+          <div>• M: Mute</div>
           <div>Catch items in the shown order.</div>
           <div class="audio-row">
             <button id="muteBtn" class="hud-btn">🔊 Sound: On</button>
@@ -35,6 +35,11 @@
               <span id="volumeValue">60%</span>
             </label>
           </div>
+          <div class="options-row"><label><input id="hudToggleMatchHighlight" type="checkbox" checked /> Highlight next ingredient</label></div>
+        </div>
+        <div class="order-card">
+          <div class="order-title">Order <span id="orderName" style="opacity:.9;font-weight:600;margin-left:8px;"></span></div>
+          <ol id="orderList"></ol>
         </div>
       </div>
     </div>
