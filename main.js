@@ -7,6 +7,8 @@
   const scoreEl = document.getElementById('score');
   const livesEl = document.getElementById('lives');
   const levelEl = document.getElementById('level');
+  const bestEl = document.getElementById('best');
+  const streakEl = document.getElementById('streak');
   const orderListEl = document.getElementById('orderList');
   const orderNameEl = document.getElementById('orderName');
   const overlay = document.getElementById('overlay');
@@ -36,6 +38,7 @@
   const TRAY = { w: 160, h: 20, speed: 520 };
   const GRAVITY = 980;
   const MAX_LIVES = 3;
+  const COLLISION_BAND = 16;
 
   // Ingredient catalog
   const TYPES = [
@@ -205,13 +208,39 @@
       this.rotten = rotten;
       this.w = INGREDIENT_SIZE.w;
       this.h = INGREDIENT_SIZE.h;
+      this.angle = 0;
+      this.angVel = rotten ? (Math.random()*2-1) * 2.2 : 0;
     }
     update(dt) {
       const gravScale = (this.key === 'golden' || this.rotten) ? 0.14 : 0.25;
       this.vy += GRAVITY * dt * gravScale;
       this.y += this.vy * dt;
+      if (this.rotten && this.angVel) {
+        this.angle += this.angVel * dt;
+        if (this.angle > 0.35) { this.angle = 0.35; this.angVel *= -1; }
+        if (this.angle < -0.35) { this.angle = -0.35; this.angVel *= -1; }
+      }
     }
-    draw(g) { drawIngredient(g, this.x - this.w/2, this.y, this.w, this.h, this.type.label, this.key, this.rotten); }
+    draw(g) {
+      const highlight = (!this.rotten && this.key === expectedKey());
+      if (this.rotten && this.angle !== 0) {
+        g.save(); g.translate(this.x, this.y); g.rotate(this.angle);
+        drawIngredient(g, -this.w/2, 0, this.w, this.h, this.type.label, this.key, this.rotten);
+        if (highlight) {
+          g.shadowColor = '#6be7ff'; g.shadowBlur = 10; g.strokeStyle = '#6be7ff'; g.lineWidth = 2;
+          g.strokeRect(-this.w/2 - 2, -this.h/2 - 2, this.w + 4, this.h + 4);
+          g.shadowBlur = 0;
+        }
+        g.restore();
+      } else {
+        drawIngredient(g, this.x - this.w/2, this.y, this.w, this.h, this.type.label, this.key, this.rotten);
+        if (highlight) {
+          g.save(); g.shadowColor = '#6be7ff'; g.shadowBlur = 10; g.strokeStyle = '#6be7ff'; g.lineWidth = 2;
+          g.strokeRect(this.x - this.w/2 - 2, this.y - this.h/2 - 2, this.w + 4, this.h + 4);
+          g.shadowBlur = 0; g.restore();
+        }
+      }
+    }
     offscreen() { return this.y - this.h/2 > WORLD.h() + 40; }
   }
 
@@ -220,6 +249,7 @@
     running: false,
     paused: false,
     score: 0,
+    best: 0,
     lives: MAX_LIVES,
     level: 1,
     trayPos: Math.floor(WORLD.w()/2),
@@ -229,12 +259,20 @@
     currentOrder: null,
     orderProgress: 0,
     combo: 0,
+    streak: 0,
     stack: [],
     // Blink state when an order is completed
     pendingNextOrder: false,
     completeBlinkTime: 0,
     completeBlinkToggle: 0,
     completeBlinkOn: true,
+    // Juice
+    particles: [],
+    shakeTime: 0, shakeMag: 0,
+    // Slow-mo
+    timeScale: 1, slowmoTime: 0,
+    // Stats
+    stats: { orders: 0, correct: 0, wrong: 0, rotten: 0, golden: 0, longestStreak: 0 },
   };
 
   function expectedKey() {
@@ -252,6 +290,11 @@
     state.ingredients = [];
     state.spawnEvery = 0.9;
     state.combo = 0;
+    state.streak = 0;
+    state.stats = { orders: 0, correct: 0, wrong: 0, rotten: 0, golden: 0, longestStreak: 0 };
+    state.particles = [];
+    state.shakeTime = 0; state.shakeMag = 0;
+    state.timeScale = 1; state.slowmoTime = 0;
     state.stack = [];
     nextOrder();
     document.body.classList.remove('bad-flash');
@@ -281,6 +324,11 @@
     scoreEl.textContent = `Score: ${state.score}`;
     livesEl.textContent = `Lives: ${'❤️'.repeat(state.lives)}`;
     levelEl.textContent = `Level: ${state.level}`;
+    if (bestEl) bestEl.textContent = `Best: ${state.best}`;
+    if (streakEl) {
+      if (state.streak >= 3) { streakEl.style.display = ''; streakEl.textContent = `🔥 Streak: ${state.streak}`; }
+      else { streakEl.style.display = 'none'; }
+    }
   }
 
   function spawnIngredient(dt) {
@@ -321,6 +369,17 @@
       state.ingredients.push(new Ingredient(key, x, vy, rotten));
     }
   }
+  // Particles and screen shake
+  class Particle {
+    constructor(x,y,vx,vy,life,color,size=3){ this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.life=life; this.maxLife=life; this.color=color; this.size=size; }
+    update(dt){ this.life-=dt; this.x+=this.vx*dt; this.y+=this.vy*dt; this.vy+=400*dt; }
+    draw(g){ if(this.life<=0) return; const a=Math.max(0,this.life/this.maxLife); g.fillStyle=this.color.replace('ALPHA', a.toFixed(2)); g.fillRect(this.x, this.y, this.size, this.size); }
+    alive(){ return this.life>0; }
+  }
+  function spawnBurst(x,y,color,count=10,speed=120,spread=Math.PI){
+    for(let i=0;i<count;i++){ const ang=(Math.random()-0.5)*spread; const s=speed*(0.5+Math.random()); state.particles.push(new Particle(x,y,Math.cos(ang)*s,Math.sin(ang)*s,0.5+Math.random()*0.4,color,3)); }
+  }
+  function addShake(mag=8,time=0.12){ state.shakeMag=Math.max(state.shakeMag,mag); state.shakeTime=Math.max(state.shakeTime,time); }
 
   function collideAndCollect() {
     // During completion blink, freeze collection
@@ -342,7 +401,7 @@
       topY = lastCenterY - lastH/2; // top surface of the current stack
     }
     // Define catch band rectangle around topY
-    const bandThickness = 16; // thin band for outline-like collision
+    const bandThickness = COLLISION_BAND; // thin band for outline-like collision
     const bandY1 = topY - bandThickness/2;
     const bandY2 = topY + bandThickness/2;
     // Width and x offset depend on next expected key (top bun is wider)
@@ -368,10 +427,14 @@
           // Rotten: purple, -1 life, score penalty
           state.score = Math.max(0, state.score - 20);
           state.combo = 0;
+          state.streak = 0;
+          state.stats.rotten++;
           state.lives = Math.max(0, state.lives - 1);
           if (state.lives <= 0) { gameOver(); return; }
           updateHUD();
           flashBad();
+          addShake(10,0.18);
+          spawnBurst(ing.x, bandY1, 'rgba(187,51,255,ALPHA)', 16, 140, Math.PI);
           audio.ensure();
           if (!audio.muted && audio.ctx) audio.sweep(420, 160, 300, 'square', 0.20);
           continue;
@@ -382,6 +445,8 @@
           // Golden Patty: +1 life (cap), score bonus
           state.lives = Math.min(MAX_LIVES, state.lives + 1);
           state.score += 100;
+          state.stats.golden++;
+          state.slowmoTime = 0.35; state.timeScale = 0.55; // slow-mo
           updateHUD();
           audio.ensure();
           if (!audio.muted && audio.ctx) audio.arp([880, 1320, 1760], 110, 'sine', 0.22);
@@ -389,6 +454,9 @@
         } else if (ing.key === want) {
           state.orderProgress++;
           state.combo++;
+          state.streak++;
+          state.stats.correct++;
+          state.stats.longestStreak = Math.max(state.stats.longestStreak, state.streak);
           state.score += 50 + state.combo * 5;
           state.stack.push(ing.key);
           formatOrderList(state.currentOrder.seq, state.orderProgress);
@@ -399,6 +467,7 @@
             const f = 560 + Math.min(6, state.combo) * 60;
             audio.tone(f, 120, 'square', 0.16);
           }
+          spawnBurst(ing.x, bandY1, 'rgba(255,215,120,ALPHA)', 10, 120, Math.PI/1.5);
           if (state.orderProgress >= state.currentOrder.seq.length) {
             // Order complete! Start blink animation, then advance order
             const comboBonus = Math.min(200, state.combo * 10);
@@ -412,6 +481,7 @@
               // level-up fanfare if applied
               if (state.level > prevLevel) audio.arp([523, 784, 1046], 200, 'sine', 0.24);
             }
+            state.stats.orders++;
             state.pendingNextOrder = true;
             state.completeBlinkTime = 0.9; // seconds
             state.completeBlinkToggle = 0;
@@ -421,12 +491,16 @@
           // wrong ingredient
           state.score = Math.max(0, state.score - 15);
           state.combo = 0;
+          state.streak = 0;
+          state.stats.wrong++;
           flashBad();
           audio.ensure();
           if (!audio.muted && audio.ctx) {
             audio.sweep(260, 200, 110, 'saw', 0.20);
             setTimeout(() => { audio.sweep(260, 200, 110, 'saw', 0.20); }, 120);
           }
+          addShake(8,0.14);
+          spawnBurst(ing.x, bandY1, 'rgba(230,60,60,ALPHA)', 14, 130, Math.PI);
         }
       }
     }
@@ -440,14 +514,17 @@
 
   function update(dt) {
     if (state.paused) { updateHUD(); return; }
+    // Slow-mo
+    if (state.slowmoTime > 0) { state.slowmoTime -= dt; if (state.slowmoTime <= 0) state.timeScale = 1; }
+    const t = dt * (state.timeScale || 1);
     // Move tray
-    if (input.left)  state.trayPos = Math.max(TRAY.w/2, state.trayPos - TRAY.speed * dt);
-    if (input.right) state.trayPos = Math.min(WORLD.w() - TRAY.w/2, state.trayPos + TRAY.speed * dt);
+    if (input.left)  state.trayPos = Math.max(TRAY.w/2, state.trayPos - TRAY.speed * t);
+    if (input.right) state.trayPos = Math.min(WORLD.w() - TRAY.w/2, state.trayPos + TRAY.speed * t);
 
     // Handle completion blink phase
     if (state.pendingNextOrder) {
-      state.completeBlinkTime -= dt;
-      state.completeBlinkToggle += dt;
+      state.completeBlinkTime -= t;
+      state.completeBlinkToggle += t;
       if (state.completeBlinkToggle >= 0.15) {
         state.completeBlinkToggle = 0;
         state.completeBlinkOn = !state.completeBlinkOn;
@@ -458,12 +535,16 @@
         nextOrder();
       }
     } else {
-      spawnIngredient(dt);
-      state.ingredients.forEach(ing => ing.update(dt));
+      spawnIngredient(t);
+      state.ingredients.forEach(ing => ing.update(t));
       state.ingredients = state.ingredients.filter(ing => !ing.offscreen());
 
       collideAndCollect();
     }
+    // Particles and shake
+    state.particles.forEach(p => p.update(t));
+    state.particles = state.particles.filter(p => p.alive());
+    if (state.shakeTime > 0) state.shakeTime -= dt;
     updateHUD();
   }
 
@@ -475,8 +556,20 @@
     ctx.fillStyle = '#121b28';
     ctx.fillRect(0, 0, WORLD.w(), gy);
 
-    drawTray();
-    state.ingredients.forEach(ing => ing.draw(ctx));
+    // Screen shake translate
+    if (state.shakeTime > 0) {
+      const m = state.shakeMag * Math.max(0, Math.min(1, state.shakeTime / 0.2));
+      ctx.save();
+      ctx.translate((Math.random()*2-1)*m, (Math.random()*2-1)*m);
+      drawTray();
+      state.ingredients.forEach(ing => ing.draw(ctx));
+      state.particles.forEach(p => p.draw(ctx));
+      ctx.restore();
+    } else {
+      drawTray();
+      state.ingredients.forEach(ing => ing.draw(ctx));
+      state.particles.forEach(p => p.draw(ctx));
+    }
 
     ctx.fillStyle = 'rgba(255,255,255,0.08)';
     ctx.fillRect(0, gy-2, WORLD.w(), 2);
@@ -536,12 +629,24 @@
     if (list) list.remove(); // keep it tidy
     const h3 = card.querySelector('h3');
     if (h3) h3.textContent = 'Final Score';
-    const p = document.createElement('p');
-    p.textContent = `You scored ${state.score}. Press Start to play again.`;
-    // Remove previous p if exists
-    const prevP = card.querySelector('p');
-    if (prevP) prevP.remove();
-    card.insertBefore(p, card.querySelector('button'));
+    const prev = card.querySelector('.stats-block');
+    if (prev) prev.remove();
+    // Update high score
+    if (state.score > (state.best||0)) { state.best = state.score; try { localStorage.setItem('pcbb_high_score', String(state.best)); } catch {} }
+    const accTotal = state.stats.correct + state.stats.wrong + state.stats.rotten;
+    const acc = accTotal ? Math.round((state.stats.correct/accTotal)*100) : 0;
+    const div = document.createElement('div');
+    div.className = 'stats-block';
+    div.innerHTML = `
+      <p>You scored ${state.score}. Best: ${state.best}</p>
+      <ul style="text-align:left;max-width:420px;margin:8px auto;">
+        <li>Orders completed: ${state.stats.orders}</li>
+        <li>Accuracy: ${acc}%</li>
+        <li>Longest streak: ${state.stats.longestStreak}</li>
+        <li>Golden caught: ${state.stats.golden}, Rotten hit: ${state.stats.rotten}</li>
+      </ul>
+    `;
+    card.insertBefore(div, card.querySelector('button'));
   }
 
   // Loop
@@ -586,6 +691,7 @@
   }
 
   // Initialize HUD and initial order preview
+  try { const b = parseInt(localStorage.getItem('pcbb_high_score')||'0',10); if (!isNaN(b)) state.best = b; } catch {}
   updateHUD();
   formatOrderList(['patty','cheese','topbun'], 0);
 })();
