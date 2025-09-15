@@ -327,14 +327,41 @@
     if (state.pendingNextOrder) return;
     const tx = state.trayPos - TRAY.w/2;
     const ty = FLOOR_Y();
-    const tw = TRAY.w;
-    const th = TRAY.h;
+
+    // Compute the current burger top surface and catch band matching the next layer's width
+    const want = expectedKey();
+    const layerHeight = INGREDIENT_SIZE.h + 2;
+    const bottomCenterY = ty - 14; // bottom bun center y
+    const bottomTopY = bottomCenterY - 18/2; // top surface of bottom bun
+    let topY = bottomTopY;
+    if (state.stack.length > 0) {
+      const lastKey = state.stack[state.stack.length - 1];
+      const lastIsTopBun = lastKey === 'topbun';
+      const lastCenterY = bottomCenterY - (state.stack.length) * layerHeight; // matches draw Y for i=length-1
+      const lastH = lastIsTopBun ? 18 : INGREDIENT_SIZE.h;
+      topY = lastCenterY - lastH/2; // top surface of the current stack
+    }
+    // Define catch band rectangle around topY
+    const bandThickness = 16; // thin band for outline-like collision
+    const bandY1 = topY - bandThickness/2;
+    const bandY2 = topY + bandThickness/2;
+    // Width and x offset depend on next expected key (top bun is wider)
+    const isTopNext = want === 'topbun';
+    const bandX = tx + (isTopNext ? 8 : 12);
+    const bandW = (isTopNext ? (TRAY.w - 16) : (TRAY.w - 24));
+    const bandX2 = bandX + bandW;
 
     for (let i = state.ingredients.length-1; i >= 0; i--) {
       const ing = state.ingredients[i];
-      const withinX = ing.x > tx && ing.x < (tx + tw);
-      const withinY = ing.y + ing.h/2 >= ty && ing.y - ing.h/2 <= ty + th;
-      if (withinX && withinY) {
+      // Ingredient rectangle
+      const ix1 = ing.x - ing.w/2;
+      const ix2 = ing.x + ing.w/2;
+      const iy1 = ing.y - ing.h/2;
+      const iy2 = ing.y + ing.h/2;
+      // Rect overlap with top band
+      const overlapX = ix1 < bandX2 && ix2 > bandX;
+      const overlapY = iy1 < bandY2 && iy2 > bandY1;
+      if (overlapX && overlapY) {
         state.ingredients.splice(i,1);
 
         if (ing.rotten) {
